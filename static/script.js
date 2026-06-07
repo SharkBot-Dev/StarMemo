@@ -614,3 +614,10 @@ function initClouds() {
     }, Math.random() * 20000 + 25000);
 }
 
+// Reset window scroll position when keyboard closes (fixes iOS Safari viewport shift bug)
+document.querySelectorAll('input, textarea').forEach(el => {
+    el.addEventListener('blur', () => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    });
+});
+

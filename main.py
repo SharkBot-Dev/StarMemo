@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
@@ -37,16 +37,16 @@ def extract_keywords(text):
 
 @app.route('/')
 def index():
-    if 'username' not in session or 'code' not in session:
-        user = users_col.find_one({"username": session.get('username'), "code": session.get('code')})
+    if 'username' not in request.cookies or 'code' not in request.cookies:
+        user = users_col.find_one({"username": request.cookies.get('username'), "code": request.cookies.get('code')})
         if not user:
             return redirect(url_for('login'))
-    return render_template("sky.html", username=session.get('username'), title=title, description=description)
+    return render_template("sky.html", username=request.cookies.get('username'), title=title, description=description)
 
 @app.get('/login')
 def login():
-    if 'username' in session and 'code' in session:
-        user = users_col.find_one({"username": session.get('username'), "code": session.get('code')})
+    if 'username' in request.cookies and 'code' in request.cookies:
+        user = users_col.find_one({"username": request.cookies.get('username'), "code": request.cookies.get('code')})
         if user:
             return redirect(url_for('index'))
     return render_template("login.html", title=title, description=description, site_key=site_key)
@@ -76,8 +76,8 @@ def login_post():
     
     if user:
         if check_password_hash(user['password'], password):
-            session['username'] = username
-            session['code'] = code
+            request.cookies['username'] = username
+            request.cookies['code'] = code
             users_col.update_one({
                 "username": username
             }, {
@@ -95,13 +95,14 @@ def login_post():
             "password": hashed_password,
             "code": code
         })
-        session['username'] = username
-        session['code'] = code
+        request.cookies['username'] = username
+        request.cookies['code'] = code
         return redirect(url_for('index'))
 
 @app.get('/logout')
 def logout():
-    session.pop('username', None)
+    request.cookies.pop('username', None)
+    request.cookies.pop('code', None)
     return redirect(url_for('login'))
 
 @app.get('/terms')
@@ -114,16 +115,16 @@ def privacy():
 
 @app.get('/api/memos')
 def get_memos():
-    if 'username' not in session or 'code' not in session:
+    if 'username' not in request.cookies or 'code' not in request.cookies:
         return jsonify({"error": "Unauthorized"}), 401
         
-    user = users_col.find_one({"username": session.get('username'), "code": session.get('code')})
+    user = users_col.find_one({"username": request.cookies.get('username'), "code": request.cookies.get('code')})
     if not user:
         return jsonify({"error": "Unauthorized"}), 401
     
     query = request.args.get('q', '')
     
-    filter_query = {"username": session['username']}
+    filter_query = {"username": request.cookies['username']}
     if query:
         filter_query["text"] = {"$regex": query, "$options": "i"}
     user_memos = list(memos_col.find(filter_query))
@@ -141,7 +142,7 @@ def get_memos():
     public_memos = []
     if user_keywords:
         public_filter = {
-            "username": {"$ne": session['username']},
+            "username": {"$ne": request.cookies['username']},
             "is_public": True,
             "keywords": {"$in": list(user_keywords)}
         }
@@ -156,7 +157,7 @@ def get_memos():
         existing_public_ids = {memo["_id"] for memo in public_memos}
         
         complementary_filter = {
-            "username": {"$ne": session['username']},
+            "username": {"$ne": request.cookies['username']},
             "is_public": True
         }
         if existing_public_ids:
@@ -197,10 +198,10 @@ def get_memos():
 
 @app.post('/api/memos')
 def add_memo():
-    if 'username' not in session or 'code' not in session:
+    if 'username' not in request.cookies or 'code' not in request.cookies:
         return jsonify({"error": "Unauthorized"}), 401
         
-    user = users_col.find_one({"username": session.get('username'), "code": session.get('code')})
+    user = users_col.find_one({"username": request.cookies.get('username'), "code": request.cookies.get('code')})
     if not user:
         return jsonify({"error": "Unauthorized"}), 401
         
@@ -213,7 +214,7 @@ def add_memo():
     keywords = list(extract_keywords(text))
     
     memos_col.insert_one({
-        "username": session['username'],
+        "username": request.cookies['username'],
         "text": text,
         "is_public": is_public,
         "keywords": keywords,
