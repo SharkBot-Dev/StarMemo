@@ -36,6 +36,8 @@ def index():
         if not user:
             return redirect(url_for('login'))
     user = db.users_col.find_one({"code": request.cookies.get('code')})
+    if not user:
+        return redirect(url_for('login'))
     return render_template("sky.html", username=user['username'], title=title, description=description)
 
 @app.get('/login')
