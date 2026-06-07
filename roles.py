@@ -1,6 +1,3 @@
-import os
-from pymongo import MongoClient
-import dotenv
 import db
 
 PERMISSIONS = {
@@ -13,39 +10,26 @@ PERMISSIONS = {
 }
 
 DEFAULT_ROLES = {
-    "owner": {
-        "permissions": [1, 2, 3, 4, 5, 6],
-        "description": "オーナー権限があります。"
-    },
-    "admin": {
-        "permissions": [1, 2, 3, 4, 5, 6],
-        "description": "管理者権限があります。"
-    },
-    "moderator": {
-        "permissions": [1, 2, 3, 4, 5],
-        "description": "モデレーター権限があります。"
-    },
-    "sub_moderator": {
-        "permissions": [1, 2, 3, 4],
-        "description": "副モデレーター権限があります。"
-    },
-    "user": {
-        "permissions": [1, 2],
-        "description": "通常のユーザーです"
-    },
-    "mute": {
-        "permissions": [1], 
-        "description": "投稿が行えません。"
-    },
-    "ban": {
-        "permissions": [],
-        "description": "投稿、閲覧などほとんどのことが行えません。"
-    },
+    "owner": {"permissions": [1, 2, 3, 4, 5, 6], "description": "オーナー権限があります。"},
+    "admin": {"permissions": [1, 2, 3, 4, 5, 6], "description": "管理者権限があります。"},
+    "moderator": {"permissions": [1, 2, 3, 4, 5], "description": "モデレーター権限があります。"},
+    "sub_moderator": {"permissions": [1, 2, 3, 4], "description": "副モデレーター権限があります。"},
+    "user": {"permissions": [1, 2], "description": "通常のユーザーです"},
+    "mute": {"permissions": [1], "description": "投稿が行えません。"},
+    "ban": {"permissions": [], "description": "投稿、閲覧などほとんどのことが行えません。"},
 }
 
-def load_roles_from_db():
+_roles_cache = None
+
+def load_roles_from_db(force_reload=False):
+    global _roles_cache
+    
+    if _roles_cache is not None and not force_reload:
+        return _roles_cache
+
     if db.roles_col is None:
-        return {k: {"permissions": set(v["permissions"]), "description": v["description"]} for k, v in DEFAULT_ROLES.items()}
+        _roles_cache = {k: {"permissions": set(v["permissions"]), "description": v["description"]} for k, v in DEFAULT_ROLES.items()}
+        return _roles_cache
     
     try:
         if db.roles_col.count_documents({}) == 0:
@@ -64,39 +48,22 @@ def load_roles_from_db():
                 "permissions": set(doc.get("permissions", [])),
                 "description": doc.get("description", "")
             }
-        return db_roles
+        
+        _roles_cache = db_roles
+        return _roles_cache
+
     except Exception as e:
         print(f"Error loading roles from DB, using defaults: {e}")
         return {k: {"permissions": set(v["permissions"]), "description": v["description"]} for k, v in DEFAULT_ROLES.items()}
 
 class RolesDict:
-    def __contains__(self, item):
-        roles_data = load_roles_from_db()
-        return item in roles_data
-
-    def __getitem__(self, key):
-        roles_data = load_roles_from_db()
-        return roles_data[key]
-
-    def get(self, key, default=None):
-        roles_data = load_roles_from_db()
-        return roles_data.get(key, default)
-
-    def __iter__(self):
-        roles_data = load_roles_from_db()
-        return iter(roles_data)
-
-    def keys(self):
-        roles_data = load_roles_from_db()
-        return roles_data.keys()
-
-    def items(self):
-        roles_data = load_roles_from_db()
-        return roles_data.items()
-
-    def values(self):
-        roles_data = load_roles_from_db()
-        return roles_data.values()
+    def __contains__(self, item): return item in load_roles_from_db()
+    def __getitem__(self, key): return load_roles_from_db()[key]
+    def get(self, key, default=None): return load_roles_from_db().get(key, default)
+    def __iter__(self): return iter(load_roles_from_db())
+    def keys(self): return load_roles_from_db().keys()
+    def items(self): return load_roles_from_db().items()
+    def values(self): return load_roles_from_db().values()
 
 ROLES = RolesDict()
 
@@ -110,8 +77,9 @@ def is_permission(role: str, required_permission_id: int) -> bool:
     return required_permission_id in role_info["permissions"]
 
 def any_permission(roles: list[str], required_permission_id: int) -> bool:
+    roles_data = load_roles_from_db()
     for r in roles:
-        role_info = get_role(r)
+        role_info = roles_data.get(r)
         if role_info and required_permission_id in role_info["permissions"]:
             return True
     return False
@@ -127,6 +95,7 @@ def create_role(name: str, permissions: list[int], description: str) -> bool:
             "permissions": [int(p) for p in permissions],
             "description": description
         })
+        load_roles_from_db(force_reload=True) #
         return True
     except Exception as e:
         print(f"Error creating role {name}: {e}")
@@ -143,7 +112,10 @@ def update_role(name: str, permissions: list[int], description: str) -> bool:
                 "description": description
             }}
         )
-        return result.modified_count > 0 or result.matched_count > 0
+        success = result.modified_count > 0 or result.matched_count > 0
+        if success:
+            load_roles_from_db(force_reload=True) 
+        return success
     except Exception as e:
         print(f"Error updating role {name}: {e}")
         return False
@@ -154,7 +126,8 @@ def delete_role(name: str) -> bool:
     try:
         db.roles_col.delete_one({"name": name})
         if db.users_col is not None:
-            db.users_col["Users"].update_many({}, {"$pull": {"roles": name}})
+            db.users_col.update_many({}, {"$pull": {"roles": name}})
+        load_roles_from_db(force_reload=True) 
         return True
     except Exception as e:
         print(f"Error deleting role {name}: {e}")
