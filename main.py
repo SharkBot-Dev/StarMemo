@@ -14,7 +14,7 @@ app.secret_key = os.getenv("SECREST_KEY")
 
 tokenizer = Tokenizer(mmap=False)
 
-client = MongoClient("mongodb://localhost:27017")
+client = MongoClient(os.getenv("MONGO_URI"))
 db = client["NotSNS"]
 users_col = db["Users"]
 memos_col = db["Memos"]
