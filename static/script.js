@@ -70,8 +70,7 @@ async function addMemo() {
         });
         if (response.ok) {
             memoInput.value = '';
-            memoInput.style.height = 'auto'; // Reset height
-            document.getElementById('isPublicCheckbox').checked = false;
+            memoInput.style.height = 'auto'; 
             searchInput.value = '';
             initConstellation(true);
         }
