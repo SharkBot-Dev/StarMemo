@@ -49,7 +49,7 @@ def login():
         user = users_col.find_one({"username": session.get('username'), "code": session.get('code')})
         if user:
             return redirect(url_for('index'))
-    return render_template("login.html", title=title, description=description)
+    return render_template("login.html", title=title, description=description, site_key=site_key)
 
 @app.post('/login')
 def login_post():
