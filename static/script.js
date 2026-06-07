@@ -12,6 +12,20 @@ const addMemoBtn = document.getElementById('addMemoBtn');
 const searchInput = document.getElementById('searchInput');
 const showPublicToggle = document.getElementById('showPublicToggle');
 
+let userPermissions = null;
+
+async function fetchUserPermissions() {
+    if (userPermissions) return userPermissions;
+    try {
+        const response = await fetch('/api/roles/user');
+        userPermissions = await response.json();
+        return userPermissions;
+    } catch (e) {
+        console.error("Failed to fetch user permissions", e);
+        return { success: false };
+    }
+}
+
 let stars = [];
 let memoConnections = [];
 let searchTimeout = null;
@@ -210,6 +224,8 @@ async function initConstellation(scrollToLatest = false) {
     
     const currentUsername = document.getElementById('currentUsername').value;
     const showPublic = showPublicToggle.checked;
+    
+    const perms = await fetchUserPermissions();
 
     if (!showPublic) {
         allPosts = allPosts.filter(p => p.username === currentUsername);
@@ -295,6 +311,36 @@ async function initConstellation(scrollToLatest = false) {
         const textContent = document.createElement('div');
         textContent.textContent = post.text;
         bubble.appendChild(textContent);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '削除';
+        deleteBtn.style.marginTop = '10px';
+        deleteBtn.style.background = '#ff4f4f';
+        deleteBtn.style.color = 'white';
+        deleteBtn.style.border = 'none';
+        deleteBtn.style.padding = '5px 10px';
+        deleteBtn.style.borderRadius = '5px';
+        deleteBtn.style.cursor = 'pointer';
+        deleteBtn.style.display = 'none'; 
+
+        bubble.appendChild(deleteBtn);
+
+        if (perms.success && perms.has_delete_permission) {
+            deleteBtn.style.display = 'block';
+        }
+            
+        deleteBtn.addEventListener('click', async (e) => {
+            e.preventDefault(); 
+            e.stopPropagation(); 
+            if (confirm('本当に削除しますか？')) {
+                const response = await fetch(`/api/memos/${post._id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    initConstellation();
+                } else {
+                    alert('削除に失敗しました');
+                }
+            }
+        });
 
         const preview = document.createElement('div');
         preview.className = 'post-preview';
@@ -424,7 +470,7 @@ function updateSkyColor() {
 // 1分ごとに背景色を更新
 setInterval(updateSkyColor, 60000);
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
     updateSkyColor();
     initClouds();
     resizeCanvas();
@@ -433,6 +479,19 @@ window.addEventListener('DOMContentLoaded', () => {
         top: (SKY_HEIGHT * currentZoom - window.innerHeight) / 2,
         behavior: 'instant'
     });
+
+    const perms = await fetchUserPermissions();
+    if (perms.success && perms.has_admin_permission) {
+        document.getElementById('adminLink').style.display = 'block';
+    }
+
+    if (!perms.has_view_permission) {
+        location.href = "/forbidden"
+    }
+
+    if (!perms.has_create_permission) {
+        memoInput.disabled = true;
+    }
 });
 
 // GUI表示・非表示のトグルロジック

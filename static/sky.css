@@ -373,6 +373,13 @@ body {
     z-index: 10;
     white-space: pre-wrap;
     word-break: break-word;
+    pointer-events: none;
+}
+
+.star-node.active .post-bubble {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+    pointer-events: auto;
 }
 
 .post-preview {

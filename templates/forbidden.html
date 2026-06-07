@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>権限がありません。 - {{title}}</title>
+    <meta name="twitter:title" content="星空メモ" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:description" content="{{description}}">
+    <meta name="twitter:image" content="https://cdn.discordapp.com/avatars/1322100616369147924/ea2f4e3e91a7ed3e096567b34c070600.png?size=1024" />
+    <link rel="stylesheet" href="static/sky.css">
+    <style>
+        body {
+            width: 100%;
+            height: 100vh;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 20px;
+        }
+        .legal-container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(15, 15, 35, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            color: white;
+            line-height: 1.8;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            position: relative;
+        }
+        h1 { font-weight: 300; letter-spacing: 2px; margin-bottom: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; text-align: center; }
+        h2 { font-size: 1.2rem; margin-top: 30px; margin-bottom: 15px; color: #4facfe; border-left: 4px solid #4facfe; padding-left: 15px; }
+        p { margin-bottom: 15px; font-size: 0.95rem; color: rgba(255,255,255,0.9); }
+        ul { margin-bottom: 20px; padding-left: 20px; }
+        li { margin-bottom: 10px; font-size: 0.95rem; color: rgba(255,255,255,0.9); }
+        .back-link-container { text-align: center; margin-top: 40px; }
+        .back-link { display: inline-block; color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
+        .back-link:hover { color: white; }
+        #sky { fixed: top 0 left 0; width: 100%; height: 100%; z-index: -1; position: fixed; }
+    </style>
+</head>
+<body>
+    <div id="sky"></div>
+
+    <div class="legal-container">
+        <h1>投稿を見る権限がありません。</h1>
+        <p>サービス管理者にお問い合わせください。</p>
+        <div class="back-link-container">
+            <a href="/" class="back-link">← ログイン画面に戻る</a>
+        </div>
+    </div>
+
+    <script>
+        const sky = document.getElementById('sky');
+        for (let i = 0; i < 150; i++) {
+            const bgStar = document.createElement('div');
+            bgStar.className = 'bg-star';
+            bgStar.style.width = `${Math.random() * 2 + 1}px`;
+            bgStar.style.height = bgStar.style.width;
+            bgStar.style.left = `${Math.random() * 100}%`;
+            bgStar.style.top = `${Math.random() * 100}%`;
+            bgStar.style.opacity = Math.random();
+            sky.appendChild(bgStar);
+        }
+    </script>
+</body>
+</html>

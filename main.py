@@ -7,6 +7,8 @@ import dotenv
 import tinysegmenter
 from datetime import datetime, timezone
 import requests
+import db
+import roles
 
 dotenv.load_dotenv()
 
@@ -17,12 +19,8 @@ title = os.getenv("TITLE")
 description = os.getenv("DESCRIPTION")
 site_key = os.getenv("TURNSTILE_SITEKEY")
 
-client = MongoClient(os.getenv("MONGO_URI"))
-db = client[os.getenv("DB_NAME")]
-users_col = db["Users"]
-memos_col = db["Memos"]
-memos_col.create_index("createdAt", expireAfterSeconds=86400)
-memos_col.update_many({"createdAt": {"$exists": False}}, {"$set": {"createdAt": datetime.now(timezone.utc)}})
+db.db.memos_col.create_index("createdAt", expireAfterSeconds=86400)
+db.db.memos_col.update_many({"createdAt": {"$exists": False}}, {"$set": {"createdAt": datetime.now(timezone.utc)}})
 
 def extract_keywords(text):
     tokens = tinysegmenter.tokenize(text)
@@ -34,16 +32,16 @@ def extract_keywords(text):
 @app.route('/')
 def index():
     if 'code' not in request.cookies:
-        user = users_col.find_one({"code": request.cookies.get('code')})
+        user = db.users_col.find_one({"code": request.cookies.get('code')})
         if not user:
             return redirect(url_for('login'))
-    user = users_col.find_one({"code": request.cookies.get('code')})
+    user = db.users_col.find_one({"code": request.cookies.get('code')})
     return render_template("sky.html", username=user['username'], title=title, description=description)
 
 @app.get('/login')
 def login():
     if 'code' in request.cookies:
-        user = users_col.find_one({"code": request.cookies.get('code')})
+        user = db.users_col.find_one({"code": request.cookies.get('code')})
         if user:
             return redirect(url_for('index'))
     return render_template("login.html", title=title, description=description, site_key=site_key)
@@ -69,11 +67,11 @@ def login_post():
 
     code = secrets.token_urlsafe(100)
 
-    user = users_col.find_one({"username": username})
+    user = db.users_col.find_one({"username": username})
     
     if user:
         if check_password_hash(user['password'], password):
-            users_col.update_one({
+            db.users_col.update_one({
                 "username": username
             }, {
                 "$set": {
@@ -87,10 +85,11 @@ def login_post():
             return render_template("login.html", error="その名前は既に使用されているか、パスワードが違います。", title=title, description=description, site_key=site_key)
     else:
         hashed_password = generate_password_hash(password)
-        users_col.insert_one({
+        db.users_col.insert_one({
             "username": username,
             "password": hashed_password,
-            "code": code
+            "code": code,
+            "roles": ["user"]
         })
         resp = make_response(redirect(url_for('index')))
         resp.set_cookie('code', code, secure=True, httponly=True)
@@ -110,12 +109,34 @@ def terms():
 def privacy():
     return render_template("privacy.html", title=title, description=description)
 
+@app.get('/forbidden')
+def forbidden():
+    if 'code' in request.cookies:
+        user = db.users_col.find_one({"code": request.cookies.get('code')})
+        if user:
+            return redirect(url_for('index'))
+    return render_template("login.html", title=title, description=description)
+
+@app.get('/admin')
+def admin():
+    if 'code' not in request.cookies:
+        return redirect(url_for('login'))
+        
+    user = db.users_col.find_one({"code": request.cookies.get('code')})
+    if not user:
+        return redirect(url_for('login'))
+    
+    if not roles.any_permission(user.get('roles', ['user']), 6):
+        return "Forbidden", 403
+
+    return render_template("admin.html", title=title, description=description)
+
 @app.get('/api/memos')
 def get_memos():
     if 'code' not in request.cookies:
         return jsonify({"error": "Unauthorized"}), 401
         
-    user = users_col.find_one({"code": request.cookies.get('code')})
+    user = db.users_col.find_one({"code": request.cookies.get('code')})
     if not user:
         return jsonify({"error": "Unauthorized"}), 401
     
@@ -124,7 +145,7 @@ def get_memos():
     filter_query = {"username": user['username']}
     if query:
         filter_query["text"] = {"$regex": query, "$options": "i"}
-    user_memos = list(memos_col.find(filter_query))
+    user_memos = list(db.memos_col.find(filter_query))
     
     user_keywords = set()
     for memo in user_memos:
@@ -133,7 +154,7 @@ def get_memos():
         else:
             keywords = list(extract_keywords(memo['text']))
             user_keywords.update(keywords)
-            memos_col.update_one({"_id": memo["_id"]}, {"$set": {"keywords": keywords}})
+            db.memos_col.update_one({"_id": memo["_id"]}, {"$set": {"keywords": keywords}})
             memo['keywords'] = keywords
 
     public_memos = []
@@ -146,7 +167,7 @@ def get_memos():
         if query:
             public_filter["text"] = {"$regex": query, "$options": "i"}
         
-        public_memos = list(memos_col.find(public_filter))
+        public_memos = list(db.memos_col.find(public_filter))
 
     min_public_memos = 50
     if len(public_memos) < min_public_memos:
@@ -163,7 +184,7 @@ def get_memos():
             complementary_filter["text"] = {"$regex": query, "$options": "i"}
             
         complementary_memos = list(
-            memos_col.find(complementary_filter)
+            db.memos_col.find(complementary_filter)
             .sort("createdAt", -1)
             .limit(needed)
         )
@@ -198,7 +219,7 @@ def add_memo():
     if 'code' not in request.cookies:
         return jsonify({"error": "Unauthorized"}), 401
         
-    user = users_col.find_one({"code": request.cookies.get('code')})
+    user = db.users_col.find_one({"code": request.cookies.get('code')})
     if not user:
         return jsonify({"error": "Unauthorized"}), 401
         
@@ -210,7 +231,7 @@ def add_memo():
     is_public = data.get('is_public', False)
     keywords = list(extract_keywords(text))
     
-    memos_col.insert_one({
+    db.memos_col.insert_one({
         "username": user['username'],
         "text": text,
         "is_public": is_public,
@@ -218,6 +239,290 @@ def add_memo():
         "createdAt": datetime.now(timezone.utc)
     })
     return jsonify({"success": True})
+
+@app.delete('/api/memos/<memo_id>')
+def delete_memo(memo_id):
+    if 'code' not in request.cookies:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = db.users_col.find_one({"code": request.cookies.get('code')})
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    if not roles.any_permission(user.get('roles', ['user']), 3):
+        return jsonify({"error": "Forbidden"}), 403
+
+    from bson import ObjectId
+    result = db.memos_col.delete_one({"_id": ObjectId(memo_id)})
+    
+    if result.deleted_count == 1:
+        return jsonify({"success": True})
+    else:
+        return jsonify({"error": "Not found"}), 404
+
+@app.post('/api/ban')
+def set_ban():
+    if 'code' not in request.cookies:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = db.users_col.find_one({"code": request.cookies.get('code')})
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    if not roles.any_permission(user.get('roles', ['user']), 5):
+        return jsonify({"error": "Forbidden"}), 403
+    
+    role = request.json.get('role')
+    if not role in roles.ROLES:
+        return jsonify({"error": "BadRequest"}), 400
+
+    db.users_col.update_one({
+        "username": request.json.get('username')
+    }, {
+        "$set": {
+            "roles": ["ban"]
+        }
+    })
+
+    return jsonify({"success": True})
+
+@app.delete('/api/ban')
+def remove_ban():
+    if 'code' not in request.cookies:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = db.users_col.find_one({"code": request.cookies.get('code')})
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    if not roles.any_permission(user.get('roles', ['user']), 5):
+        return jsonify({"error": "Forbidden"}), 403
+    
+    role = request.json.get('role')
+    if not role in roles.ROLES:
+        return jsonify({"error": "BadRequest"}), 400
+
+    db.users_col.update_one({
+        "username": request.json.get('username')
+    }, {
+        "$set": {
+            "roles": ["user"]
+        }
+    })
+
+    return jsonify({"success": True})
+
+@app.get('/api/roles/user')
+def get_user_roles():
+    if 'code' not in request.cookies:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = db.users_col.find_one({"code": request.cookies.get('code')})
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    has_admin_permission = roles.any_permission(user.get('roles', ['user']), 6)
+    has_delete_permission = roles.any_permission(user.get('roles', ['user']), 3)
+    has_view_permission = roles.any_permission(user.get('roles', ['user']), 1)
+    has_create_permission = roles.any_permission(user.get('roles', ['user']), 2)
+    
+    return jsonify({
+        "success": True, 
+        "roles": user.get('roles', ['user']),
+        "has_admin_permission": has_admin_permission,
+        "has_delete_permission": has_delete_permission,
+        "has_view_permission": has_view_permission,
+        "has_create_permission": has_create_permission
+    })
+
+@app.post('/api/roles/user')
+def add_user_roles():
+    if 'code' not in request.cookies:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = db.users_col.find_one({"code": request.cookies.get('code')})
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    if not roles.any_permission(user.get('roles', ['user']), 6):
+        return jsonify({"error": "Forbidden"}), 403
+    
+    role = request.json.get('role')
+    if not role in roles.ROLES:
+        return jsonify({"error": "BadRequest"}), 400
+
+    db.users_col.update_one({
+        "username": request.json.get('username')
+    }, {
+        "$addToSet": {
+            "roles": role
+        }
+    })
+
+    return jsonify({"success": True})
+
+@app.delete('/api/roles/user')
+def remove_user_roles():
+    if 'code' not in request.cookies:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = db.users_col.find_one({"code": request.cookies.get('code')})
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    if not roles.any_permission(user.get('roles', ['user']), 6):
+        return jsonify({"error": "Forbidden"}), 403
+    
+    role = request.json.get('role')
+    if not role in roles.ROLES:
+        return jsonify({"error": "BadRequest"}), 400
+
+    db.users_col.update_one({
+        "username": request.json.get('username')
+    }, {
+        "$pull": {
+            "roles": role
+        }
+    })
+
+    return jsonify({"success": True})
+
+@app.get('/api/roles')
+def get_roles():
+    if 'code' not in request.cookies:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = db.users_col.find_one({"code": request.cookies.get('code')})
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    if not roles.any_permission(user.get('roles', ['user']), 6):
+        return jsonify({"error": "Forbidden"}), 403
+
+    roles_data = {}
+    for name, data in roles.ROLES.items():
+        roles_data[name] = {
+            "permissions": list(data["permissions"]),
+            "description": data["description"]
+        }
+    
+    permissions_data = {str(k): v for k, v in roles.PERMISSIONS.items()}
+
+    return jsonify({
+        "success": True,
+        "roles": roles_data,
+        "permissions": permissions_data
+    })
+
+@app.post('/api/roles')
+def create_role_endpoint():
+    if 'code' not in request.cookies:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = db.users_col.find_one({"code": request.cookies.get('code')})
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    if not roles.any_permission(user.get('roles', ['user']), 6):
+        return jsonify({"error": "Forbidden"}), 403
+
+    data = request.json
+    name = data.get('name')
+    permissions = data.get('permissions', [])
+    description = data.get('description', '')
+
+    if not name:
+        return jsonify({"error": "Name is required"}), 400
+
+    try:
+        permissions = [int(p) for p in permissions]
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid permissions format"}), 400
+
+    success = roles.create_role(name, permissions, description)
+    if success:
+        return jsonify({"success": True})
+    else:
+        return jsonify({"error": "Role already exists or database error"}), 400
+
+@app.put('/api/roles/<role_name>')
+def update_role_endpoint(role_name):
+    if 'code' not in request.cookies:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = db.users_col.find_one({"code": request.cookies.get('code')})
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    if not roles.any_permission(user.get('roles', ['user']), 6):
+        return jsonify({"error": "Forbidden"}), 403
+
+    data = request.json
+    permissions = data.get('permissions', [])
+    description = data.get('description', '')
+
+    try:
+        permissions = [int(p) for p in permissions]
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid permissions format"}), 400
+
+    success = roles.update_role(role_name, permissions, description)
+    if success:
+        return jsonify({"success": True})
+    else:
+        return jsonify({"error": "Failed to update role"}), 400
+
+@app.delete('/api/roles/<role_name>')
+def delete_role_endpoint(role_name):
+    if 'code' not in request.cookies:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = db.users_col.find_one({"code": request.cookies.get('code')})
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    if not roles.any_permission(user.get('roles', ['user']), 6):
+        return jsonify({"error": "Forbidden"}), 403
+
+    success = roles.delete_role(role_name)
+    if success:
+        return jsonify({"success": True})
+    else:
+        return jsonify({"error": "Failed to delete role"}), 400
+
+@app.get('/api/users')
+def list_users():
+    if 'code' not in request.cookies:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user = db.users_col.find_one({"code": request.cookies.get('code')})
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    if not roles.any_permission(user.get('roles', ['user']), 6):
+        return jsonify({"error": "Forbidden"}), 403
+
+    page = int(request.args.get('page', 1))
+    limit = int(request.args.get('limit', 10))
+    skip = (page - 1) * limit
+
+    total_users = db.users_col.count_documents({})
+    
+    users = list(db.users_col.find({}, {"username": 1, "roles": 1}).skip(skip).limit(limit))
+    users_list = []
+    for u in users:
+        users_list.append({
+            "username": u.get("username"),
+            "roles": u.get("roles", ["user"])
+        })
+
+    return jsonify({
+        "success": True,
+        "users": users_list,
+        "total_users": total_users,
+        "page": page,
+        "limit": limit
+    })
 
 if __name__ == "__main__":
     app.run("0.0.0.0", port=5000, debug=False)
