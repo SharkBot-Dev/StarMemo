@@ -38,13 +38,53 @@ function setZoom(level) {
 zoomInBtn.addEventListener('click', () => setZoom(currentZoom + 0.1));
 zoomOutBtn.addEventListener('click', () => setZoom(currentZoom - 0.1));
 
-scrollWrapper.addEventListener('wheel', (e) => {
+window.addEventListener('wheel', (e) => {
     if (e.ctrlKey) {
         e.preventDefault();
         const delta = e.deltaY > 0 ? -0.05 : 0.05;
         setZoom(currentZoom + delta);
     }
 }, { passive: false });
+
+// Prevent default browser zoom on iOS Safari and other gesture-supporting browsers
+window.addEventListener('gesturestart', (e) => {
+    e.preventDefault();
+});
+window.addEventListener('gesturechange', (e) => {
+    e.preventDefault();
+});
+
+// Implement custom pinch-to-zoom for mobile touch devices
+let touchStartDist = 0;
+let initialZoom = 1.0;
+
+window.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        touchStartDist = Math.sqrt(dx * dx + dy * dy);
+        initialZoom = currentZoom;
+    }
+}, { passive: true });
+
+window.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2) {
+        e.preventDefault(); // Prevents browser default zoom
+        if (touchStartDist > 0) {
+            const dx = e.touches[0].clientX - e.touches[1].clientX;
+            const dy = e.touches[0].clientY - e.touches[1].clientY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const factor = dist / touchStartDist;
+            setZoom(initialZoom * factor);
+        }
+    }
+}, { passive: false });
+
+window.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) {
+        touchStartDist = 0;
+    }
+});
 
 async function fetchMemos(query = '') {
     try {
