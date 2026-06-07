@@ -1,0 +1,322 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 3000px;
+    height: 3000px;
+    background: linear-gradient(135deg, #020010 0%, #0b0926 50%, #1a1545 100%);
+    background-attachment: fixed;
+    overflow: auto;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    position: relative;
+}
+
+#constellationCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3000px;
+    height: 3000px;
+    z-index: 1;
+    pointer-events: none; 
+}
+
+#sky {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3000px;
+    height: 3000px;
+    z-index: 2;
+}
+
+#ui-layer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 100;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+}
+
+#ui-layer-top {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 100;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.search-container {
+    width: 100%;
+    max-width: 300px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 8px 15px;
+    display: flex;
+    align-items: center;
+    pointer-events: auto;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+}
+
+#searchInput {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 0.85rem;
+    outline: none;
+}
+
+#searchInput::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.input-container {
+    width: 100%;
+    max-width: 500px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: auto;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+}
+
+#memoInput {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 0.95rem;
+    resize: none;
+    outline: none;
+    padding: 5px;
+    max-height: 100px;
+}
+
+#memoInput::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+#addMemoBtn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 6px 15px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+#addMemoBtn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+}
+
+.star-node {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background-color: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 15px 4px rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    transform: translate(-50%, -50%);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.star-node.private {
+    background-color: #ffd700;
+    box-shadow: 0 0 15px 4px rgba(255, 215, 0, 0.7);
+}
+
+.star-node.public {
+    background-color: #87ceeb;
+    box-shadow: 0 0 15px 4px rgba(135, 206, 235, 0.7);
+}
+
+.star-node.private:hover,
+.star-node.private.active {
+    box-shadow: 0 0 25px 8px rgba(255, 215, 0, 1);
+}
+
+.star-node.public:hover,
+.star-node.public.active {
+    box-shadow: 0 0 25px 8px rgba(135, 206, 235, 1);
+}
+
+.star-node:hover,
+.star-node.active {
+    transform: translate(-50%, -50%) scale(1.5);
+}
+
+.author-name {
+    font-size: 0.7rem;
+    color: rgba(135, 206, 235, 0.8);
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.post-bubble {
+    position: absolute;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%) scale(0.9);
+    width: 220px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 12px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    pointer-events: none; 
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    z-index: 10;
+}
+
+.post-preview {
+    position: absolute;
+    bottom: 25px;
+    left: 50%;
+    transform: translateX(-50%) scale(1);
+    width: auto;
+    max-width: 150px;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.65rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.3s ease, transform 0.3s ease, color 0.3s ease;
+    z-index: 5;
+}
+
+.star-node:hover .post-preview {
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.star-node.active .post-preview {
+    opacity: 0;
+    transform: translateX(-50%) scale(0.8);
+}
+
+.star-node.active .post-bubble {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+}
+
+.bg-star {
+    position: absolute;
+    background-color: #fff;
+    border-radius: 50%;
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.loginOverlay {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(15, 15, 35, 0.85);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 30px;
+    color: white;
+    z-index: 1000;
+    width: 320px;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    text-align: center;
+}
+
+.loginOverlay h2 {
+    margin-bottom: 10px;
+    font-weight: 300;
+    letter-spacing: 2px;
+}
+
+.loginOverlay form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    text-align: left;
+}
+
+.loginOverlay input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 10px;
+    color: white;
+    outline: none;
+    margin-top: 5px;
+}
+
+.loginOverlay button {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: opacity 0.2s;
+}
+
+.loginOverlay button:hover {
+    opacity: 0.9;
+}
+
+@media (max-width: 600px) {
+    .post-bubble {
+        width: 180px;
+        font-size: 0.75rem;
+        padding: 10px;
+        bottom: 20px;
+    }
+
+    .star-node {
+        width: 10px;
+        height: 10px;
+    }
+}

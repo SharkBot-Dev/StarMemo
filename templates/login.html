@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NotSNS</title>
+    <link rel="stylesheet" href="static/sky.css">
+</head>
+<body>
+
+    <canvas id="constellationCanvas"></canvas>
+
+    <div id="sky"></div>
+
+    <dialog class="loginOverlay" open>
+        <form method="post">
+            <h2>星空メモ</h2>
+            {% if error %}
+                <p style="color: #ffaaaa; font-size: 0.8em;">{{ error }}</p>
+            {% endif %}
+            <div>
+                ユーザー名: <input name="username" required>
+            </div>
+            <div>
+                パスワード: <input name="password" type="password" required>
+            </div>
+            <button type="submit">ログイン / アカウント作成</button>
+            <div style="margin-top: 20px; font-size: 0.7rem; color: rgba(255,255,255,0.4);">
+                <a href="/terms" style="color: inherit; text-decoration: none;">利用規約</a> | 
+                <a href="/privacy" style="color: inherit; text-decoration: none;">プライバシーポリシー</a>
+            </div>
+        </form>
+    </dialog>
+</body>
+</html>

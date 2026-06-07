@@ -1,0 +1,188 @@
+import os
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from pymongo import MongoClient
+from werkzeug.security import generate_password_hash, check_password_hash
+import secrets
+import dotenv
+from janome.tokenizer import Tokenizer
+from datetime import datetime, timezone
+
+dotenv.load_dotenv()
+
+app = Flask(__name__, static_folder="static", template_folder="templates")
+app.secret_key = os.getenv("SECREST_KEY")
+
+tokenizer = Tokenizer(mmap=False)
+
+client = MongoClient("mongodb://localhost:27017")
+db = client["NotSNS"]
+users_col = db["Users"]
+memos_col = db["Memos"]
+memos_col.create_index("createdAt", expireAfterSeconds=86400)
+memos_col.update_many({"createdAt": {"$exists": False}}, {"$set": {"createdAt": datetime.now(timezone.utc)}})
+
+def extract_keywords(text):
+    tokens = tokenizer.tokenize(text)
+    keywords = set()
+    for token in tokens:
+        part_of_speech = token.part_of_speech.split(',')[0]
+        if part_of_speech in ['名詞', '動詞', '形容詞']:
+            keywords.add(token.base_form)
+    return keywords
+
+@app.route('/')
+def index():
+    if 'username' not in session or 'code' not in session:
+        user = users_col.find_one({"username": session.get('username'), "code": session.get('code')})
+        if not user:
+            return redirect(url_for('login'))
+    return render_template("sky.html", username=session.get('username'))
+
+@app.get('/login')
+def login():
+    if 'username' in session and 'code' in session:
+        user = users_col.find_one({"username": session.get('username'), "code": session.get('code')})
+        if user:
+            return redirect(url_for('index'))
+    return render_template("login.html")
+
+@app.post('/login')
+def login_post():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    
+    if not username or not password:
+        return render_template("login.html", error="ユーザー名とパスワードを入力してください")
+
+    code = secrets.token_urlsafe(100)
+
+    user = users_col.find_one({"username": username})
+    
+    if user:
+        if check_password_hash(user['password'], password):
+            session['username'] = username
+            session['code'] = code
+            users_col.update_one({
+                "username": username
+            }, {
+                "$set": {
+                    "code": code
+                }
+            })
+            return redirect(url_for('index'))
+        else:
+            return render_template("login.html", error="パスワードが正しくありません")
+    else:
+        hashed_password = generate_password_hash(password)
+        users_col.insert_one({
+            "username": username,
+            "password": hashed_password,
+            "code": code
+        })
+        session['username'] = username
+        session['code'] = code
+        return redirect(url_for('index'))
+
+@app.get('/logout')
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('login'))
+
+@app.get('/terms')
+def terms():
+    return render_template("terms.html")
+
+@app.get('/privacy')
+def privacy():
+    return render_template("privacy.html")
+
+@app.get('/api/memos')
+def get_memos():
+    if 'username' not in session or 'code' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    user = users_col.find_one({"username": session.get('username'), "code": session.get('code')})
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    query = request.args.get('q', '')
+    
+    filter_query = {"username": session['username']}
+    if query:
+        filter_query["text"] = {"$regex": query, "$options": "i"}
+    user_memos = list(memos_col.find(filter_query))
+    
+    user_keywords = set()
+    for memo in user_memos:
+        if 'keywords' in memo:
+            user_keywords.update(memo['keywords'])
+        else:
+            keywords = list(extract_keywords(memo['text']))
+            user_keywords.update(keywords)
+            memos_col.update_one({"_id": memo["_id"]}, {"$set": {"keywords": keywords}})
+            memo['keywords'] = keywords
+
+    public_memos = []
+    if user_keywords:
+        public_filter = {
+            "username": {"$ne": session['username']},
+            "is_public": True,
+            "keywords": {"$in": list(user_keywords)}
+        }
+        if query:
+            public_filter["text"] = {"$regex": query, "$options": "i"}
+        
+        public_memos = list(memos_col.find(public_filter))
+
+    all_memos = user_memos + public_memos
+    
+    memos_with_ids = []
+    for memo in all_memos:
+        memo['_id'] = str(memo['_id'])
+        if 'keywords' not in memo:
+            memo['keywords'] = list(extract_keywords(memo['text']))
+        memos_with_ids.append(memo)
+
+    connections = []
+    for i in range(len(memos_with_ids)):
+        for j in range(i + 1, len(memos_with_ids)):
+            keywords1 = set(memos_with_ids[i]['keywords'])
+            keywords2 = set(memos_with_ids[j]['keywords'])
+            
+            intersection = keywords1.intersection(keywords2)
+            if intersection:
+                connections.append([i, j])
+
+    return jsonify({
+        "memos": memos_with_ids,
+        "connections": connections
+    })
+
+@app.post('/api/memos')
+def add_memo():
+    if 'username' not in session or 'code' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    user = users_col.find_one({"username": session.get('username'), "code": session.get('code')})
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    data = request.json
+    if not data or 'text' not in data:
+        return jsonify({"error": "Missing text"}), 400
+    
+    text = data['text']
+    is_public = data.get('is_public', False)
+    keywords = list(extract_keywords(text))
+    
+    memos_col.insert_one({
+        "username": session['username'],
+        "text": text,
+        "is_public": is_public,
+        "keywords": keywords,
+        "createdAt": datetime.now(timezone.utc)
+    })
+    return jsonify({"success": True})
+
+if __name__ == "__main__":
+    app.run("0.0.0.0", port=5000, debug=True)

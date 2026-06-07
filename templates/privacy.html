@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プライバシーポリシー - 星空メモ</title>
+    <link rel="stylesheet" href="static/sky.css">
+    <style>
+        body {
+            width: 100%;
+            height: 100vh;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 20px;
+        }
+        .legal-container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(15, 15, 35, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            color: white;
+            line-height: 1.8;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            position: relative;
+        }
+        h1 { font-weight: 300; letter-spacing: 2px; margin-bottom: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; text-align: center; }
+        h2 { font-size: 1.2rem; margin-top: 30px; margin-bottom: 15px; color: #4facfe; border-left: 4px solid #4facfe; padding-left: 15px; }
+        p { margin-bottom: 15px; font-size: 0.95rem; color: rgba(255,255,255,0.9); }
+        ul { margin-bottom: 20px; padding-left: 20px; }
+        li { margin-bottom: 10px; font-size: 0.95rem; color: rgba(255,255,255,0.9); }
+        .back-link-container { text-align: center; margin-top: 40px; }
+        .back-link { display: inline-block; color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
+        .back-link:hover { color: white; }
+        #sky { fixed: top 0 left 0; width: 100%; height: 100%; z-index: -1; position: fixed; }
+    </style>
+</head>
+<body>
+    <div id="sky"></div>
+
+    <div class="legal-container">
+        <h1>プライバシーポリシー</h1>
+        <p>星空メモ（以下、「本サービス」といいます。）は、本サービス上で提供するサービスにおける、ユーザーの個人情報の取扱いについて、以下のとおりプライバシーポリシー（以下、「本ポリシー」といいます。）を定めます。</p>
+
+        <h2>1. 収集する情報</h2>
+        <p>本サービスでは、以下の情報を収集します。</p>
+        <ul>
+            <li><strong>アカウント情報:</strong> ユーザー名およびパスワード（ハッシュ化して保存）。</li>
+            <li><strong>投稿内容:</strong> ユーザーが投稿したメモのテキストデータ。</li>
+            <li><strong>利用状況データ:</strong> キーワード抽出および関連付け表示のためのメタデータ。</li>
+        </ul>
+
+        <h2>2. 情報の利用目的</h2>
+        <p>収集した情報は、以下の目的のために利用されます。</p>
+        <ul>
+            <li>ユーザーの本人確認および認証のため</li>
+            <li>キーワード抽出によるメモの関連付けおよび表示のため</li>
+            <li>本サービスの保守、不正利用の防止のため</li>
+            <li>サービスの改善、新機能の開発のため</li>
+        </ul>
+
+        <h2>3. データの保持と削除</h2>
+        <p>本サービスは「刹那の共有」をコンセプトとしており、以下の通りデータを管理します。</p>
+        <ul>
+            <li><strong>メモデータ:</strong> 投稿から24時間経過後、システムにより自動的にデータベースから完全に抹消されます。</li>
+            <li><strong>アカウントデータ:</strong> ユーザーがアカウントを保持している間保持されます。</li>
+        </ul>
+
+        <h2>4. 第三者への提供</h2>
+        <p>法令に基づく場合を除き、ユーザーの同意なく個人情報を第三者に提供することはありません。</p>
+
+        <h2>5. セキュリティ</h2>
+        <p>本サービスは、提供された情報の漏洩、滅失または毀損の防止その他の個人情報の安全管理のために必要かつ適切な措置を講じます。パスワードは強力なハッシュアルゴリズムを用いて暗号化され、管理者であっても平文を確認することはできません。</p>
+
+        <h2>6. プライバシーポリシーの変更</h2>
+        <p>本サービスは、必要に応じて本ポリシーを変更することがあります。変更した場合には、本サービス上でお知らせします。</p>
+
+        <div class="back-link-container">
+            <a href="/" class="back-link">← ログイン画面に戻る</a>
+        </div>
+    </div>
+
+    <script>
+        const sky = document.getElementById('sky');
+        for (let i = 0; i < 150; i++) {
+            const bgStar = document.createElement('div');
+            bgStar.className = 'bg-star';
+            bgStar.style.width = `${Math.random() * 2 + 1}px`;
+            bgStar.style.height = bgStar.style.width;
+            bgStar.style.left = `${Math.random() * 100}%`;
+            bgStar.style.top = `${Math.random() * 100}%`;
+            bgStar.style.opacity = Math.random();
+            sky.appendChild(bgStar);
+        }
+    </script>
+</body>
+</html>
