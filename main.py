@@ -6,6 +6,7 @@ import secrets
 import dotenv
 from janome.tokenizer import Tokenizer
 from datetime import datetime, timezone
+import requests
 
 dotenv.load_dotenv()
 
@@ -14,8 +15,12 @@ app.secret_key = os.getenv("SECREST_KEY")
 
 tokenizer = Tokenizer(mmap=False)
 
+title = os.getenv("TITLE")
+description = os.getenv("DESCRIPTION")
+site_key = os.getenv("TURNSTILE_SITEKEY")
+
 client = MongoClient(os.getenv("MONGO_URI"))
-db = client["NotSNS"]
+db = client[os.getenv("DB_NAME")]
 users_col = db["Users"]
 memos_col = db["Memos"]
 memos_col.create_index("createdAt", expireAfterSeconds=86400)
@@ -36,7 +41,7 @@ def index():
         user = users_col.find_one({"username": session.get('username'), "code": session.get('code')})
         if not user:
             return redirect(url_for('login'))
-    return render_template("sky.html", username=session.get('username'))
+    return render_template("sky.html", username=session.get('username'), title=title, description=description)
 
 @app.get('/login')
 def login():
@@ -44,7 +49,7 @@ def login():
         user = users_col.find_one({"username": session.get('username'), "code": session.get('code')})
         if user:
             return redirect(url_for('index'))
-    return render_template("login.html")
+    return render_template("login.html", title=title, description=description)
 
 @app.post('/login')
 def login_post():
@@ -52,7 +57,18 @@ def login_post():
     password = request.form.get('password')
     
     if not username or not password:
-        return render_template("login.html", error="ユーザー名とパスワードを入力してください")
+        return render_template("login.html", error="ユーザー名とパスワードを入力してください", title=title, description=description, site_key=site_key)
+
+    turnstile = request.form.get('cf-turnstile-response')
+    if not turnstile:
+        return render_template("login.html", error="トークンがありません", title=title, description=description, site_key=site_key)
+
+    url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
+    payload = {'secret': os.getenv("TURNSTILE_SECRET"), 'response': turnstile, "remoteip": request.remote_addr}
+    r = requests.post(url, data=payload)
+    j = r.json()
+    if j["success"] != True:
+        return render_template("login.html", error="検証に失敗しました。", title=title, description=description, site_key=site_key)
 
     code = secrets.token_urlsafe(100)
 
@@ -71,7 +87,7 @@ def login_post():
             })
             return redirect(url_for('index'))
         else:
-            return render_template("login.html", error="パスワードが正しくありません")
+            return render_template("login.html", error="その名前は既に使用されているか、パスワードが違います。", title=title, description=description, site_key=site_key)
     else:
         hashed_password = generate_password_hash(password)
         users_col.insert_one({
@@ -90,11 +106,11 @@ def logout():
 
 @app.get('/terms')
 def terms():
-    return render_template("terms.html")
+    return render_template("terms.html", title=title, description=description)
 
 @app.get('/privacy')
 def privacy():
-    return render_template("privacy.html")
+    return render_template("privacy.html", title=title, description=description)
 
 @app.get('/api/memos')
 def get_memos():
