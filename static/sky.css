@@ -24,6 +24,12 @@ body {
     overflow: auto;
     -webkit-overflow-scrolling: touch;
     z-index: 1;
+    cursor: grab;
+}
+
+.is-dragging, .is-dragging * {
+    cursor: grabbing !important;
+    user-select: none !important;
 }
 
 #scroll-content {

@@ -347,3 +347,66 @@ if (goToDensestBtn) {
         scrollToDensestArea();
     });
 }
+
+// PC版でのドラッグスクロールの実装
+let isDragging = false;
+let startX = 0;
+let startY = 0;
+let scrollLeftStart = 0;
+let scrollTopStart = 0;
+let hasMoved = false;
+let preventNextClick = false;
+
+scrollWrapper.addEventListener('mousedown', (e) => {
+    // 左クリックのみドラッグを開始
+    if (e.button !== 0) return;
+    
+    // スクロールバー上でのクリック時はドラッグを開始しない
+    const rect = scrollWrapper.getBoundingClientRect();
+    const isInScrollbar = (e.clientX >= rect.left + scrollWrapper.clientWidth) ||
+                          (e.clientY >= rect.top + scrollWrapper.clientHeight);
+    if (isInScrollbar) return;
+    
+    isDragging = true;
+    hasMoved = false;
+    preventNextClick = false;
+    
+    startX = e.clientX;
+    startY = e.clientY;
+    scrollLeftStart = scrollWrapper.scrollLeft;
+    scrollTopStart = scrollWrapper.scrollTop;
+    
+    scrollWrapper.classList.add('is-dragging');
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    
+    // わずかな動き（5px以上）をドラッグスクロールとみなす
+    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+        hasMoved = true;
+        preventNextClick = true;
+    }
+    
+    scrollWrapper.scrollLeft = scrollLeftStart - dx;
+    scrollWrapper.scrollTop = scrollTopStart - dy;
+});
+
+window.addEventListener('mouseup', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    scrollWrapper.classList.remove('is-dragging');
+});
+
+// ドラッグ移動した後のクリックイベントをインターセプトしてキャンセルする
+scrollWrapper.addEventListener('click', (e) => {
+    if (preventNextClick) {
+        e.stopPropagation();
+        e.preventDefault();
+        preventNextClick = false;
+    }
+}, true);
+
