@@ -4,7 +4,7 @@ from pymongo import MongoClient
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
 import dotenv
-from janome.tokenizer import Tokenizer
+import tinysegmenter
 from datetime import datetime, timezone
 import requests
 
@@ -12,8 +12,6 @@ dotenv.load_dotenv()
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 app.secret_key = os.getenv("SECREST_KEY")
-
-tokenizer = Tokenizer(mmap=False)
 
 title = os.getenv("TITLE")
 description = os.getenv("DESCRIPTION")
@@ -27,12 +25,10 @@ memos_col.create_index("createdAt", expireAfterSeconds=86400)
 memos_col.update_many({"createdAt": {"$exists": False}}, {"$set": {"createdAt": datetime.now(timezone.utc)}})
 
 def extract_keywords(text):
-    tokens = tokenizer.tokenize(text)
+    tokens = tinysegmenter.tokenize(text)
     keywords = set()
     for token in tokens:
-        part_of_speech = token.part_of_speech.split(',')[0]
-        if part_of_speech in ['名詞', '動詞', '形容詞']:
-            keywords.add(token.base_form)
+        keywords.add(token)
     return keywords
 
 @app.route('/')
