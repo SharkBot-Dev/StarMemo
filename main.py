@@ -124,7 +124,7 @@ def get_memos():
     
     query = request.args.get('q', '')
     
-    filter_query = {"username": request.cookies['username']}
+    filter_query = {"username": user['username']}
     if query:
         filter_query["text"] = {"$regex": query, "$options": "i"}
     user_memos = list(memos_col.find(filter_query))
@@ -142,7 +142,7 @@ def get_memos():
     public_memos = []
     if user_keywords:
         public_filter = {
-            "username": {"$ne": request.cookies['username']},
+            "username": {"$ne": user['username']},
             "is_public": True,
             "keywords": {"$in": list(user_keywords)}
         }
@@ -157,7 +157,7 @@ def get_memos():
         existing_public_ids = {memo["_id"] for memo in public_memos}
         
         complementary_filter = {
-            "username": {"$ne": request.cookies['username']},
+            "username": {"$ne": user['username']},
             "is_public": True
         }
         if existing_public_ids:
@@ -214,7 +214,7 @@ def add_memo():
     keywords = list(extract_keywords(text))
     
     memos_col.insert_one({
-        "username": request.cookies['username'],
+        "username": user['username'],
         "text": text,
         "is_public": is_public,
         "keywords": keywords,
