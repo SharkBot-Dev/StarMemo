@@ -152,6 +152,16 @@ body {
     opacity: 0.7;
 }
 
+.zoom-controls button svg {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.zoom-controls button:hover svg {
+    transform: scale(1.1) rotate(15deg);
+}
+
 #zoomLevelIndicator {
     font-size: 0.8rem;
     min-width: 40px;
@@ -458,7 +468,7 @@ body {
     #ui-layer-top {
         flex-direction: column;
         align-items: center;
-        padding: 10px;
+        padding: 50px 10px 10px 10px;
         gap: 8px;
     }
 
@@ -529,5 +539,97 @@ body {
     .star-node {
         width: 14px;
         height: 14px;
+    }
+}
+
+/* GUI Toggle Button Styles */
+.toggle-gui-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 101;
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+    pointer-events: auto;
+}
+
+.toggle-gui-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    transform: scale(1.05);
+}
+
+.toggle-gui-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+.toggle-gui-btn .eye-off-icon {
+    display: none;
+}
+
+/* GUI非表示時のスタイル */
+body.gui-hidden .toggle-gui-btn .eye-icon {
+    display: none;
+}
+
+body.gui-hidden .toggle-gui-btn .eye-off-icon {
+    display: block;
+}
+
+body.gui-hidden .toggle-gui-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.4);
+}
+
+body.gui-hidden .toggle-gui-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* GUI要素のトランジション */
+.gui-element {
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.3s;
+    visibility: visible;
+}
+
+body.gui-hidden .gui-element {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+}
+
+body.gui-hidden #ui-layer.gui-element {
+    transform: translateY(20px);
+}
+
+body.gui-hidden #ui-layer-top.gui-element {
+    transform: translateY(-20px);
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+    .toggle-gui-btn {
+        top: 15px;
+        right: 15px;
+        width: 38px;
+        height: 38px;
+    }
+    .toggle-gui-btn svg {
+        width: 18px;
+        height: 18px;
     }
 }

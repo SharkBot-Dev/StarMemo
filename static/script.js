@@ -188,7 +188,7 @@ async function initConstellation(scrollToLatest = false) {
             e.stopPropagation();
         });
 
-        stars.push({ x, y, isMine });
+        stars.push({ x, y, isMine, element: starNode });
         return { x, y };
     };
 
@@ -257,3 +257,93 @@ window.addEventListener('DOMContentLoaded', () => {
         behavior: 'instant'
     });
 });
+
+// GUI表示・非表示のトグルロジック
+const toggleGuiBtn = document.getElementById('toggle-gui-btn');
+
+function toggleGUI() {
+    document.body.classList.toggle('gui-hidden');
+    const isHidden = document.body.classList.contains('gui-hidden');
+    localStorage.setItem('gui-hidden', isHidden);
+}
+
+if (toggleGuiBtn) {
+    toggleGuiBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleGUI();
+    });
+}
+
+// 初期状態の復元
+if (localStorage.getItem('gui-hidden') === 'true') {
+    document.body.classList.add('gui-hidden');
+}
+
+// キーボードショートカット (Hキーでトグル)
+window.addEventListener('keydown', (e) => {
+    // アクティブな要素が入力フィールド（textareaやinput）の場合はショートカットを無視
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')) {
+        return;
+    }
+    
+    // 'h' または 'H' キー
+    if (e.key === 'h' || e.key === 'H') {
+        e.preventDefault();
+        toggleGUI();
+    }
+});
+
+// 最もメモが密集しているエリアを探索する関数
+function findDensestArea() {
+    if (stars.length === 0) return null;
+    
+    const radius = 300; // 密集度を判定する半径（ピクセル）
+    let maxCount = -1;
+    let bestStar = null;
+    
+    for (let i = 0; i < stars.length; i++) {
+        let count = 0;
+        const s1 = stars[i];
+        for (let j = 0; j < stars.length; j++) {
+            const s2 = stars[j];
+            const distSq = (s1.x - s2.x) ** 2 + (s1.y - s2.y) ** 2;
+            if (distSq <= radius * radius) {
+                count++;
+            }
+        }
+        if (count > maxCount) {
+            maxCount = count;
+            bestStar = s1;
+        }
+    }
+    
+    return bestStar;
+}
+
+// 密集エリアへ移動する関数
+function scrollToDensestArea() {
+    const target = findDensestArea();
+    if (target) {
+        scrollWrapper.scrollTo({
+            left: (target.x * currentZoom) - window.innerWidth / 2,
+            top: (target.y * currentZoom) - window.innerHeight / 2,
+            behavior: 'smooth'
+        });
+        
+        // 既存のアクティブな星をクリアし、密集地の中心の星をアクティブにしてポップアップを表示する
+        document.querySelectorAll('.star-node').forEach(s => s.classList.remove('active'));
+        if (target.element) {
+            target.element.classList.add('active');
+        }
+    }
+}
+
+// 最も密集しているエリアへの移動ボタンのイベントリスナー設定
+const goToDensestBtn = document.getElementById('goToDensestBtn');
+if (goToDensestBtn) {
+    goToDensestBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        scrollToDensestArea();
+    });
+}

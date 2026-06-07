@@ -17,7 +17,7 @@
         </div>
     </div>
 
-    <div id="ui-layer-top">
+    <div id="ui-layer-top" class="gui-element">
         <div class="search-container">
             <input type="text" id="searchInput" placeholder="メモを検索...">
         </div>
@@ -26,13 +26,19 @@
             <label for="showPublicToggle">他人のメモを表示</label>
         </div>
         <div class="zoom-controls">
+            <button id="goToDensestBtn" title="最もメモが密集しているエリアへ移動">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="compass-icon">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+                </svg>
+            </button>
             <button id="zoomOutBtn" title="縮小">−</button>
             <span id="zoomLevelIndicator">100%</span>
             <button id="zoomInBtn" title="拡大">+</button>
         </div>
     </div>
 
-    <div id="ui-layer">
+    <div id="ui-layer" class="gui-element">
         <div class="input-container">
             <div class="expiry-note">メモは24時間後に消えます</div>
             <textarea id="memoInput" placeholder="ここに秘密のメモを残す..." rows="1"></textarea>
@@ -53,6 +59,16 @@
 
     <input type="hidden" id="currentUsername" value="{{ username }}">
 
+    <button id="toggle-gui-btn" class="toggle-gui-btn" title="GUIを表示/非表示 (H)">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-icon">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="eye-off-icon">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+        </svg>
+    </button>
 
     <script src="static/script.js"></script>
 </body>
