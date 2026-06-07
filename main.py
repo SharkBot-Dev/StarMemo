@@ -150,6 +150,27 @@ def get_memos():
         
         public_memos = list(memos_col.find(public_filter))
 
+    min_public_memos = 10
+    if len(public_memos) < min_public_memos:
+        needed = min_public_memos - len(public_memos)
+        existing_public_ids = {memo["_id"] for memo in public_memos}
+        
+        complementary_filter = {
+            "username": {"$ne": session['username']},
+            "is_public": True
+        }
+        if existing_public_ids:
+            complementary_filter["_id"] = {"$nin": list(existing_public_ids)}
+        if query:
+            complementary_filter["text"] = {"$regex": query, "$options": "i"}
+            
+        complementary_memos = list(
+            memos_col.find(complementary_filter)
+            .sort("createdAt", -1)
+            .limit(needed)
+        )
+        public_memos.extend(complementary_memos)
+
     all_memos = user_memos + public_memos
     
     memos_with_ids = []
