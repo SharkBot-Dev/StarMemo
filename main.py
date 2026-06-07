@@ -115,7 +115,7 @@ def privacy():
 
 @app.get('/api/memos')
 def get_memos():
-    if 'username' not in request.cookies or 'code' not in request.cookies:
+    if 'code' not in request.cookies:
         return jsonify({"error": "Unauthorized"}), 401
         
     user = users_col.find_one({"username": request.cookies.get('username'), "code": request.cookies.get('code')})
@@ -198,7 +198,7 @@ def get_memos():
 
 @app.post('/api/memos')
 def add_memo():
-    if 'username' not in request.cookies or 'code' not in request.cookies:
+    if 'code' not in request.cookies:
         return jsonify({"error": "Unauthorized"}), 401
         
     user = users_col.find_one({"username": request.cookies.get('username'), "code": request.cookies.get('code')})
