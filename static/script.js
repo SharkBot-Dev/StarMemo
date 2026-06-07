@@ -4,6 +4,7 @@ const SKY_HEIGHT = 3000;
 const globalPosts = [];
 
 const sky = document.getElementById('sky');
+const scrollWrapper = document.getElementById('scroll-wrapper');
 const canvas = document.getElementById('constellationCanvas');
 const ctx = canvas.getContext('2d');
 const memoInput = document.getElementById('memoInput');
@@ -39,6 +40,7 @@ async function addMemo() {
         });
         if (response.ok) {
             memoInput.value = '';
+            memoInput.style.height = 'auto'; // Reset height
             document.getElementById('isPublicCheckbox').checked = false;
             searchInput.value = '';
             initConstellation(true);
@@ -54,6 +56,11 @@ memoInput.addEventListener('keydown', (e) => {
         e.preventDefault();
         addMemo();
     }
+});
+
+memoInput.addEventListener('input', () => {
+    memoInput.style.height = 'auto';
+    memoInput.style.height = (memoInput.scrollHeight) + 'px';
 });
 
 searchInput.addEventListener('input', () => {
@@ -163,13 +170,13 @@ async function initConstellation(scrollToLatest = false) {
     });
 
     if (latestStarPos) {
-        window.scrollTo({
+        scrollWrapper.scrollTo({
             left: latestStarPos.x - window.innerWidth / 2,
             top: latestStarPos.y - window.innerHeight / 2,
             behavior: 'smooth'
         });
     } else if (allPosts.length > 0) {
-        window.scrollTo({
+        scrollWrapper.scrollTo({
             left: (totalX / allPosts.length) - window.innerWidth / 2,
             top: (totalY / allPosts.length) - window.innerHeight / 2,
             behavior: 'smooth'
@@ -214,7 +221,7 @@ function drawLines() {
 window.addEventListener('resize', resizeCanvas);
 window.addEventListener('DOMContentLoaded', () => {
     resizeCanvas();
-    window.scrollTo({
+    scrollWrapper.scrollTo({
         left: (SKY_WIDTH - window.innerWidth) / 2,
         top: (SKY_HEIGHT - window.innerHeight) / 2,
         behavior: 'instant'

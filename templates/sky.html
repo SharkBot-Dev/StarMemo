@@ -8,34 +8,35 @@
 </head>
 <body>
 
-    <canvas id="constellationCanvas"></canvas>
-
-    <div id="sky"></div>
+    <div id="scroll-wrapper">
+        <canvas id="constellationCanvas"></canvas>
+        <div id="sky"></div>
+    </div>
 
     <div id="ui-layer-top">
         <div class="search-container">
             <input type="text" id="searchInput" placeholder="メモを検索...">
         </div>
-        <div class="toggle-container" style="margin-left: 10px; display: flex; align-items: center; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px; padding: 8px 15px; pointer-events: auto;">
+        <div class="toggle-container">
             <input type="checkbox" id="showPublicToggle" checked>
-            <label for="showPublicToggle" style="color: white; font-size: 0.8rem; margin-left: 5px; cursor: pointer;">他人のメモを表示</label>
+            <label for="showPublicToggle">他人のメモを表示</label>
         </div>
     </div>
 
     <div id="ui-layer">
-        <div class="input-container" style="position: relative;">
-            <div style="position: absolute; top: -22px; right: 20px; color: rgba(255, 255, 255, 0.4); font-size: 0.7rem; pointer-events: none; letter-spacing: 0.05em;">メモは24時間後に消えます</div>
+        <div class="input-container">
+            <div class="expiry-note">メモは24時間後に消えます</div>
             <textarea id="memoInput" placeholder="ここに秘密のメモを残す..." rows="1"></textarea>
-            <div class="checkbox-container" style="display: flex; align-items: center; gap: 5px;">
+            <div class="checkbox-container">
                 <input type="checkbox" id="isPublicCheckbox">
-                <label for="isPublicCheckbox" style="color: rgba(255,255,255,0.4); font-size: 0.7rem; cursor: pointer;">公開</label>
+                <label for="isPublicCheckbox">公開</label>
             </div>
             <button id="addMemoBtn">残す</button>
-            <div style="display: flex; flex-direction: column; gap: 5px; margin-left: 10px;">
-                <a href="/logout" style="color: rgba(255,255,255,0.4); font-size: 0.7rem; text-decoration: none;">ログアウト</a>
-                <div style="display: flex; gap: 5px; font-size: 0.6rem; color: rgba(255,255,255,0.2);">
-                    <a href="/terms" style="color: inherit; text-decoration: none;">規約</a>
-                    <a href="/privacy" style="color: inherit; text-decoration: none;">方針</a>
+            <div class="footer-links">
+                <a href="/logout">ログアウト</a>
+                <div class="sub-links">
+                    <a href="/terms">規約</a>
+                    <a href="/privacy">方針</a>
                 </div>
             </div>
         </div>
