@@ -275,7 +275,7 @@ async function initConstellation(scrollToLatest = false) {
         }
 
         let x, y;
-        const offsetRadius = 180; // Radius for the cluster spreading
+        const offsetRadius = 100; // Radius for the cluster spreading
         if (mainKeyword) {
             const angle = getDeterministicRandom(post._id + "-angle") * 2 * Math.PI;
             const distance = getDeterministicRandom(post._id + "-dist") * offsetRadius;

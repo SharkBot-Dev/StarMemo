@@ -113,11 +113,7 @@ def privacy():
 
 @app.get('/forbidden')
 def forbidden():
-    if 'code' in request.cookies:
-        user = db.users_col.find_one({"code": request.cookies.get('code')})
-        if user:
-            return redirect(url_for('index'))
-    return render_template("login.html", title=title, description=description)
+    return render_template("forbidden.html", title=title, description=description)
 
 @app.get('/admin')
 def admin():
