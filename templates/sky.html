@@ -9,8 +9,12 @@
 <body>
 
     <div id="scroll-wrapper">
-        <canvas id="constellationCanvas"></canvas>
-        <div id="sky"></div>
+        <div id="scroll-content">
+            <div id="zoom-container">
+                <canvas id="constellationCanvas"></canvas>
+                <div id="sky"></div>
+            </div>
+        </div>
     </div>
 
     <div id="ui-layer-top">
@@ -20,6 +24,11 @@
         <div class="toggle-container">
             <input type="checkbox" id="showPublicToggle" checked>
             <label for="showPublicToggle">他人のメモを表示</label>
+        </div>
+        <div class="zoom-controls">
+            <button id="zoomOutBtn" title="縮小">−</button>
+            <span id="zoomLevelIndicator">100%</span>
+            <button id="zoomInBtn" title="拡大">+</button>
         </div>
     </div>
 

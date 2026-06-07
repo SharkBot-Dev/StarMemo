@@ -15,6 +15,36 @@ const showPublicToggle = document.getElementById('showPublicToggle');
 let stars = [];
 let memoConnections = [];
 let searchTimeout = null;
+let currentZoom = 1.0;
+
+const zoomContainer = document.getElementById('zoom-container');
+const zoomInBtn = document.getElementById('zoomInBtn');
+const zoomOutBtn = document.getElementById('zoomOutBtn');
+const zoomLevelIndicator = document.getElementById('zoomLevelIndicator');
+
+function setZoom(level) {
+    currentZoom = Math.max(0.2, Math.min(3.0, level));
+    zoomContainer.style.transform = `scale(${currentZoom})`;
+    
+    const scrollContent = document.getElementById('scroll-content');
+    if (scrollContent) {
+        scrollContent.style.width = (SKY_WIDTH * currentZoom) + 'px';
+        scrollContent.style.height = (SKY_HEIGHT * currentZoom) + 'px';
+    }
+    
+    zoomLevelIndicator.textContent = `${Math.round(currentZoom * 100)}%`;
+}
+
+zoomInBtn.addEventListener('click', () => setZoom(currentZoom + 0.1));
+zoomOutBtn.addEventListener('click', () => setZoom(currentZoom - 0.1));
+
+scrollWrapper.addEventListener('wheel', (e) => {
+    if (e.ctrlKey) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.05 : 0.05;
+        setZoom(currentZoom + delta);
+    }
+}, { passive: false });
 
 async function fetchMemos(query = '') {
     try {
@@ -171,14 +201,14 @@ async function initConstellation(scrollToLatest = false) {
 
     if (latestStarPos) {
         scrollWrapper.scrollTo({
-            left: latestStarPos.x - window.innerWidth / 2,
-            top: latestStarPos.y - window.innerHeight / 2,
+            left: (latestStarPos.x * currentZoom) - window.innerWidth / 2,
+            top: (latestStarPos.y * currentZoom) - window.innerHeight / 2,
             behavior: 'smooth'
         });
     } else if (allPosts.length > 0) {
         scrollWrapper.scrollTo({
-            left: (totalX / allPosts.length) - window.innerWidth / 2,
-            top: (totalY / allPosts.length) - window.innerHeight / 2,
+            left: ((totalX / allPosts.length) * currentZoom) - window.innerWidth / 2,
+            top: ((totalY / allPosts.length) * currentZoom) - window.innerHeight / 2,
             behavior: 'smooth'
         });
     }
@@ -222,8 +252,8 @@ window.addEventListener('resize', resizeCanvas);
 window.addEventListener('DOMContentLoaded', () => {
     resizeCanvas();
     scrollWrapper.scrollTo({
-        left: (SKY_WIDTH - window.innerWidth) / 2,
-        top: (SKY_HEIGHT - window.innerHeight) / 2,
+        left: (SKY_WIDTH * currentZoom - window.innerWidth) / 2,
+        top: (SKY_HEIGHT * currentZoom - window.innerHeight) / 2,
         behavior: 'instant'
     });
 });
