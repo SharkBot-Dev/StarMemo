@@ -150,7 +150,7 @@ def get_memos():
         
         public_memos = list(memos_col.find(public_filter))
 
-    min_public_memos = 10
+    min_public_memos = 50
     if len(public_memos) < min_public_memos:
         needed = min_public_memos - len(public_memos)
         existing_public_ids = {memo["_id"] for memo in public_memos}
