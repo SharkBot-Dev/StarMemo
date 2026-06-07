@@ -137,6 +137,8 @@ async function addMemo() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text, is_public: isPublic })
+        }).catch((e) => {
+            location.href = "/login"
         });
         if (response.ok) {
             memoInput.value = '';
