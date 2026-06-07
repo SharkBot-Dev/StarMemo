@@ -25,6 +25,12 @@ body {
     -webkit-overflow-scrolling: touch;
     z-index: 1;
     cursor: grab;
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+#scroll-wrapper::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }
 
 .is-dragging, .is-dragging * {
