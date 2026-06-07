@@ -118,7 +118,7 @@ def get_memos():
     if 'code' not in request.cookies:
         return jsonify({"error": "Unauthorized"}), 401
         
-    user = users_col.find_one({"username": request.cookies.get('username'), "code": request.cookies.get('code')})
+    user = users_col.find_one({"code": request.cookies.get('code')})
     if not user:
         return jsonify({"error": "Unauthorized"}), 401
     
@@ -201,7 +201,7 @@ def add_memo():
     if 'code' not in request.cookies:
         return jsonify({"error": "Unauthorized"}), 401
         
-    user = users_col.find_one({"username": request.cookies.get('username'), "code": request.cookies.get('code')})
+    user = users_col.find_one({"code": request.cookies.get('code')})
     if not user:
         return jsonify({"error": "Unauthorized"}), 401
         
