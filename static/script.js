@@ -38,13 +38,33 @@ function setZoom(level) {
 zoomInBtn.addEventListener('click', () => setZoom(currentZoom + 0.1));
 zoomOutBtn.addEventListener('click', () => setZoom(currentZoom - 0.1));
 
+let overflowTimeout = null;
+let isPinching = false;
+
+function lockScroll() {
+    if (scrollWrapper) {
+        scrollWrapper.style.overflow = 'hidden';
+    }
+}
+
+function unlockScroll() {
+    if (scrollWrapper && !isPinching) {
+        scrollWrapper.style.overflow = 'auto';
+    }
+}
+
 window.addEventListener('wheel', (e) => {
     if (e.ctrlKey) {
         e.preventDefault();
+        
+        lockScroll();
+        clearTimeout(overflowTimeout);
+        overflowTimeout = setTimeout(unlockScroll, 300);
+        
         const delta = e.deltaY > 0 ? -0.05 : 0.05;
         setZoom(currentZoom + delta);
     }
-}, { passive: false });
+}, { passive: false, capture: true });
 
 // Prevent default browser zoom on iOS Safari and other gesture-supporting browsers
 window.addEventListener('gesturestart', (e) => {
@@ -59,18 +79,20 @@ let touchStartDist = 0;
 let initialZoom = 1.0;
 
 window.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 2) {
+    if (e.touches.length >= 2) {
+        isPinching = true;
+        lockScroll();
         const dx = e.touches[0].clientX - e.touches[1].clientX;
         const dy = e.touches[0].clientY - e.touches[1].clientY;
         touchStartDist = Math.sqrt(dx * dx + dy * dy);
         initialZoom = currentZoom;
     }
-}, { passive: true });
+}, { passive: false, capture: true });
 
 window.addEventListener('touchmove', (e) => {
-    if (e.touches.length === 2) {
-        e.preventDefault(); // Prevents browser default zoom
-        if (touchStartDist > 0) {
+    if (isPinching || e.touches.length >= 2) {
+        e.preventDefault(); // Prevents browser default zoom and scroll
+        if (e.touches.length >= 2 && touchStartDist > 0) {
             const dx = e.touches[0].clientX - e.touches[1].clientX;
             const dy = e.touches[0].clientY - e.touches[1].clientY;
             const dist = Math.sqrt(dx * dx + dy * dy);
@@ -78,13 +100,21 @@ window.addEventListener('touchmove', (e) => {
             setZoom(initialZoom * factor);
         }
     }
-}, { passive: false });
+}, { passive: false, capture: true });
 
 window.addEventListener('touchend', (e) => {
     if (e.touches.length < 2) {
         touchStartDist = 0;
+        isPinching = false;
+        unlockScroll();
     }
-});
+}, { passive: false, capture: true });
+
+window.addEventListener('touchcancel', (e) => {
+    touchStartDist = 0;
+    isPinching = false;
+    unlockScroll();
+}, { passive: false, capture: true });
 
 async function fetchMemos(query = '') {
     try {
@@ -113,6 +143,8 @@ async function addMemo() {
             memoInput.style.height = 'auto'; 
             searchInput.value = '';
             initConstellation(true);
+        } else {
+            location.href = "/login";
         }
     } catch (e) {
         console.error("Failed to add memo", e);
