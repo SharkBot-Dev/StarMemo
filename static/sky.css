@@ -4,10 +4,16 @@
     box-sizing: border-box;
 }
 
+:root {
+    --sky-color-1: #020010;
+    --sky-color-2: #0b0926;
+    --sky-color-3: #1a1545;
+}
+
 body {
     width: 100vw;
     height: 100vh;
-    background: linear-gradient(135deg, #020010 0%, #0b0926 50%, #1a1545 100%);
+    background: linear-gradient(135deg, var(--sky-color-1) 0%, var(--sky-color-2) 50%, var(--sky-color-3) 100%);
     background-attachment: fixed;
     overflow: hidden;
     font-family: 'Helvetica Neue', Arial, sans-serif;

@@ -303,7 +303,56 @@ function drawLines() {
 }
 
 window.addEventListener('resize', resizeCanvas);
+
+function updateSkyColor() {
+    const now = new Date();
+    const t = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+
+    const skyColors = [
+        { hour: 0,  c1: [2, 0, 16],   c2: [5, 4, 21],   c3: [10, 8, 36] },     // 深夜
+        { hour: 4,  c1: [15, 12, 27], c2: [44, 27, 77], c3: [90, 40, 70] },    // 明け初め
+        { hour: 6,  c1: [20, 30, 80], c2: [120, 60, 100], c3: [255, 126, 95] }, // 朝焼け
+        { hour: 8,  c1: [26, 42, 108],c2: [39, 83, 167],c3: [56, 163, 165] },  // 午前
+        { hour: 12, c1: [10, 80, 180],c2: [30, 130, 210],c3: [100, 200, 230] }, // 真昼
+        { hour: 16, c1: [26, 15, 48], c2: [168, 50, 121],c3: [255, 126, 95] },  // 夕方
+        { hour: 18, c1: [15, 10, 35], c2: [80, 30, 90],  c3: [180, 70, 70] },   // 日没直後
+        { hour: 20, c1: [5, 3, 20],   c2: [15, 10, 45],  c3: [40, 25, 75] },    // 宵のうち
+        { hour: 24, c1: [2, 0, 16],   c2: [5, 4, 21],   c3: [10, 8, 36] }      // 深夜
+    ];
+
+    let start = skyColors[0];
+    let end = skyColors[skyColors.length - 1];
+
+    for (let i = 0; i < skyColors.length - 1; i++) {
+        if (t >= skyColors[i].hour && t < skyColors[i+1].hour) {
+            start = skyColors[i];
+            end = skyColors[i+1];
+            break;
+        }
+    }
+
+    const range = end.hour - start.hour;
+    const ratio = (t - start.hour) / range;
+
+    const lerp = (a, b, r) => Math.round(a * (1 - r) + b * r);
+    const lerpColor = (cStart, cEnd, r) => {
+        return `rgb(${lerp(cStart[0], cEnd[0], r)}, ${lerp(cStart[1], cEnd[1], r)}, ${lerp(cStart[2], cEnd[2], r)})`;
+    };
+
+    const color1 = lerpColor(start.c1, end.c1, ratio);
+    const color2 = lerpColor(start.c2, end.c2, ratio);
+    const color3 = lerpColor(start.c3, end.c3, ratio);
+
+    document.documentElement.style.setProperty('--sky-color-1', color1);
+    document.documentElement.style.setProperty('--sky-color-2', color2);
+    document.documentElement.style.setProperty('--sky-color-3', color3);
+}
+
+// 1分ごとに背景色を更新
+setInterval(updateSkyColor, 60000);
+
 window.addEventListener('DOMContentLoaded', () => {
+    updateSkyColor();
     resizeCanvas();
     scrollWrapper.scrollTo({
         left: (SKY_WIDTH * currentZoom - window.innerWidth) / 2,
