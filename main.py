@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, make_response
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
@@ -76,8 +76,6 @@ def login_post():
     
     if user:
         if check_password_hash(user['password'], password):
-            request.cookies['username'] = username
-            request.cookies['code'] = code
             users_col.update_one({
                 "username": username
             }, {
@@ -85,7 +83,10 @@ def login_post():
                     "code": code
                 }
             })
-            return redirect(url_for('index'))
+            resp = make_response(redirect(url_for('index')))
+            resp.set_cookie('username', username)
+            resp.set_cookie('code', code)
+            return resp
         else:
             return render_template("login.html", error="その名前は既に使用されているか、パスワードが違います。", title=title, description=description, site_key=site_key)
     else:
@@ -95,15 +96,17 @@ def login_post():
             "password": hashed_password,
             "code": code
         })
-        request.cookies['username'] = username
-        request.cookies['code'] = code
-        return redirect(url_for('index'))
+        resp = make_response(redirect(url_for('index')))
+        resp.set_cookie('username', username)
+        resp.set_cookie('code', code)
+        return resp
 
 @app.get('/logout')
 def logout():
-    request.cookies.pop('username', None)
-    request.cookies.pop('code', None)
-    return redirect(url_for('login'))
+    resp = make_response(redirect(url_for('login')))
+    resp.delete_cookie('username')
+    resp.delete_cookie('code')
+    return resp
 
 @app.get('/terms')
 def terms():
