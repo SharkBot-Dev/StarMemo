@@ -651,3 +651,33 @@ body.gui-hidden #ui-layer-top.gui-element {
         height: 18px;
     }
 }
+
+/* Clouds Layer */
+#clouds {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.cloud {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.08); /* Extremely thin semi-transparent white */
+    filter: blur(40px);
+    border-radius: 50% 50% 40% 40% / 60% 60% 40% 40%; /* Slightly organic cloud shape */
+    pointer-events: none;
+    animation: moveCloud linear forwards;
+}
+
+@keyframes moveCloud {
+    from {
+        left: -800px;
+    }
+    to {
+        left: 3800px;
+    }
+}

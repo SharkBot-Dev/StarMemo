@@ -353,6 +353,7 @@ setInterval(updateSkyColor, 60000);
 
 window.addEventListener('DOMContentLoaded', () => {
     updateSkyColor();
+    initClouds();
     resizeCanvas();
     scrollWrapper.scrollTo({
         left: (SKY_WIDTH * currentZoom - window.innerWidth) / 2,
@@ -512,4 +513,65 @@ scrollWrapper.addEventListener('click', (e) => {
         preventNextClick = false;
     }
 }, true);
+
+// Clouds Spawning and Animation Logic
+const cloudsContainer = document.getElementById('clouds');
+
+function spawnCloud(initial = false) {
+    if (!cloudsContainer) return;
+
+    const cloud = document.createElement('div');
+    cloud.className = 'cloud';
+
+    const width = Math.random() * 400 + 300; // 300px - 700px
+    const height = Math.random() * 150 + 100; // 100px - 250px
+    const top = Math.random() * (SKY_HEIGHT - height);
+    const opacity = Math.random() * 0.05 + 0.04; // 0.04 - 0.09
+    const duration = Math.random() * 120 + 120; // 120s - 240s
+
+    cloud.style.width = `${width}px`;
+    cloud.style.height = `${height}px`;
+    cloud.style.top = `${top}px`;
+    cloud.style.opacity = opacity;
+    cloud.style.animationName = 'moveCloud';
+    cloud.style.animationDuration = `${duration}s`;
+
+    if (initial) {
+        // Initial setup: place clouds at random positions on screen to start with
+        const startX = Math.random() * (SKY_WIDTH + 800) - 800;
+        cloud.style.left = `${startX}px`;
+        
+        // Calculate negative delay to keep the animation progressing from the startX position
+        const totalDistance = SKY_WIDTH + 1600; // -800 to 3800 is 4600px
+        const currentDistance = startX + 800;
+        const progress = currentDistance / totalDistance;
+        const delay = -progress * duration;
+        cloud.style.animationDelay = `${delay}s`;
+    }
+
+    cloudsContainer.appendChild(cloud);
+
+    // Remove the cloud element once its animation ends
+    cloud.addEventListener('animationend', () => {
+        cloud.remove();
+    });
+}
+
+function initClouds() {
+    if (!cloudsContainer) return;
+
+    // Initially spawn 5-8 clouds distributed randomly across the sky
+    const initialCloudCount = Math.floor(Math.random() * 4) + 5; // 5 to 8
+    for (let i = 0; i < initialCloudCount; i++) {
+        spawnCloud(true);
+    }
+
+    // Periodically spawn a new cloud from the left side (every 25-45 seconds)
+    setInterval(() => {
+        // Keep maximum cloud count to 12 to maintain subtle look
+        if (cloudsContainer.children.length < 12) {
+            spawnCloud(false);
+        }
+    }, Math.random() * 20000 + 25000);
+}
 
