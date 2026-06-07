@@ -5,14 +5,72 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NotSNS</title>
     <link rel="stylesheet" href="static/sky.css">
+    <style>
+        body {
+            width: 100%;
+            height: 100vh;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 20px;
+        }
+        .legal-container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(15, 15, 35, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 40px;
+            color: white;
+            line-height: 1.8;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            position: relative;
+        }
+        h1 { font-weight: 300; letter-spacing: 2px; margin-bottom: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; text-align: center; }
+        h2 { font-size: 1.2rem; margin-top: 30px; margin-bottom: 15px; color: #4facfe; border-left: 4px solid #4facfe; padding-left: 15px; }
+        p { margin-bottom: 15px; font-size: 0.95rem; color: rgba(255,255,255,0.9); }
+        ul { margin-bottom: 20px; padding-left: 20px; }
+        li { margin-bottom: 10px; font-size: 0.95rem; color: rgba(255,255,255,0.9); }
+        .back-link-container { text-align: center; margin-top: 40px; }
+        .back-link { display: inline-block; color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
+        .back-link:hover { color: white; }
+        #sky { fixed: top 0 left 0; width: 100%; height: 100%; z-index: -1; position: fixed; }
+
+        .legal-container input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 12px;
+            color: white;
+            outline: none;
+            margin-top: 8px;
+            font-size: 1rem;
+        }
+
+        .legal-container button {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+    </style>
 </head>
 <body>
 
-    <canvas id="constellationCanvas"></canvas>
-
     <div id="sky"></div>
 
-    <dialog class="loginOverlay" open>
+    <dialog class="legal-container" open>
         <form method="post">
             <h2>星空メモ</h2>
             {% if error %}
@@ -23,7 +81,7 @@
             </div>
             <div>
                 パスワード: <input name="password" type="password" required>
-            </div>
+            </div><br>
             <button type="submit">ログイン / アカウント作成</button>
             <div style="margin-top: 20px; font-size: 0.7rem; color: rgba(255,255,255,0.4);">
                 <a href="/terms" style="color: inherit; text-decoration: none;">利用規約</a> | 
@@ -31,5 +89,19 @@
             </div>
         </form>
     </dialog>
+
+    <script>
+        const sky = document.getElementById('sky');
+        for (let i = 0; i < 150; i++) {
+            const bgStar = document.createElement('div');
+            bgStar.className = 'bg-star';
+            bgStar.style.width = `${Math.random() * 2 + 1}px`;
+            bgStar.style.height = bgStar.style.width;
+            bgStar.style.left = `${Math.random() * 100}%`;
+            bgStar.style.top = `${Math.random() * 100}%`;
+            bgStar.style.opacity = Math.random();
+            sky.appendChild(bgStar);
+        }
+    </script>
 </body>
 </html>
