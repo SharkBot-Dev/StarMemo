@@ -37,16 +37,16 @@ def extract_keywords(text):
 
 @app.route('/')
 def index():
-    if 'username' not in request.cookies or 'code' not in request.cookies:
-        user = users_col.find_one({"username": request.cookies.get('username'), "code": request.cookies.get('code')})
+    if 'code' not in request.cookies:
+        user = users_col.find_one({"code": request.cookies.get('code')})
         if not user:
             return redirect(url_for('login'))
     return render_template("sky.html", username=request.cookies.get('username'), title=title, description=description)
 
 @app.get('/login')
 def login():
-    if 'username' in request.cookies and 'code' in request.cookies:
-        user = users_col.find_one({"username": request.cookies.get('username'), "code": request.cookies.get('code')})
+    if 'code' in request.cookies:
+        user = users_col.find_one({"code": request.cookies.get('code')})
         if user:
             return redirect(url_for('index'))
     return render_template("login.html", title=title, description=description, site_key=site_key)
@@ -84,8 +84,7 @@ def login_post():
                 }
             })
             resp = make_response(redirect(url_for('index')))
-            resp.set_cookie('username', username)
-            resp.set_cookie('code', code)
+            resp.set_cookie('code', code, secure=True, httponly=True)
             return resp
         else:
             return render_template("login.html", error="その名前は既に使用されているか、パスワードが違います。", title=title, description=description, site_key=site_key)
@@ -97,15 +96,13 @@ def login_post():
             "code": code
         })
         resp = make_response(redirect(url_for('index')))
-        resp.set_cookie('username', username)
-        resp.set_cookie('code', code)
+        resp.set_cookie('code', code, secure=True, httponly=True)
         return resp
 
 @app.get('/logout')
 def logout():
     resp = make_response(redirect(url_for('login')))
-    resp.delete_cookie('username')
-    resp.delete_cookie('code')
+    resp.delete_cookie('code', secure=True, httponly=True)
     return resp
 
 @app.get('/terms')
