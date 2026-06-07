@@ -110,6 +110,23 @@ function resizeCanvas() {
     initConstellation();
 }
 
+// Deterministic helper functions for positioning
+function hashCode(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = (hash << 5) - hash + char;
+        hash |= 0; // Convert to 32bit integer
+    }
+    return hash;
+}
+
+function getDeterministicRandom(seed) {
+    const hash = hashCode(seed);
+    const x = Math.sin(hash) * 10000;
+    return x - Math.floor(x);
+}
+
 async function initConstellation(scrollToLatest = false) {
     sky.innerHTML = '';
     stars = [];
@@ -146,8 +163,43 @@ async function initConstellation(scrollToLatest = false) {
 
     const createStar = (post) => {
         const isMine = post.username === currentUsername;
-        const x = Math.random() * (SKY_WIDTH - margin * 2) + margin;
-        const y = Math.random() * (SKY_HEIGHT - margin * 2) + margin;
+
+        // Determine deterministic positions based on keywords and post ID to cluster them
+        let mainKeyword = null;
+        if (post.keywords && post.keywords.length > 0) {
+            const sortedKeywords = [...post.keywords].sort();
+            mainKeyword = sortedKeywords[0];
+        }
+
+        const clusterMargin = margin + 150;
+        const clusterWidth = SKY_WIDTH - clusterMargin * 2;
+        const clusterHeight = SKY_HEIGHT - clusterMargin * 2;
+
+        let clusterX, clusterY;
+        if (mainKeyword) {
+            clusterX = clusterMargin + getDeterministicRandom(mainKeyword + "-x") * clusterWidth;
+            clusterY = clusterMargin + getDeterministicRandom(mainKeyword + "-y") * clusterHeight;
+        } else {
+            // No keywords: distribute using post ID
+            clusterX = clusterMargin + getDeterministicRandom(post._id + "-default-x") * clusterWidth;
+            clusterY = clusterMargin + getDeterministicRandom(post._id + "-default-y") * clusterHeight;
+        }
+
+        let x, y;
+        const offsetRadius = 180; // Radius for the cluster spreading
+        if (mainKeyword) {
+            const angle = getDeterministicRandom(post._id + "-angle") * 2 * Math.PI;
+            const distance = getDeterministicRandom(post._id + "-dist") * offsetRadius;
+            x = clusterX + Math.cos(angle) * distance;
+            y = clusterY + Math.sin(angle) * distance;
+        } else {
+            x = clusterX;
+            y = clusterY;
+        }
+
+        // Clamp values to ensure stars stay within safe bounds
+        x = Math.max(margin, Math.min(SKY_WIDTH - margin, x));
+        y = Math.max(margin, Math.min(SKY_HEIGHT - margin, y));
 
         totalX += x;
         totalY += y;
@@ -220,10 +272,12 @@ async function initConstellation(scrollToLatest = false) {
     for (let i = 0; i < 300; i++) {
         const bgStar = document.createElement('div');
         bgStar.className = 'bg-star';
-        bgStar.style.width = `${Math.random() * 3}px`;
-        bgStar.style.height = bgStar.style.width;
-        bgStar.style.left = `${Math.random() * SKY_WIDTH}px`;
-        bgStar.style.top = `${Math.random() * SKY_HEIGHT}px`;
+        const sizeSeed = getDeterministicRandom(`bg-size-${i}`);
+        const size = sizeSeed * 2 + 1; // Size between 1px and 3px
+        bgStar.style.width = `${size}px`;
+        bgStar.style.height = `${size}px`;
+        bgStar.style.left = `${getDeterministicRandom(`bg-x-${i}`) * SKY_WIDTH}px`;
+        bgStar.style.top = `${getDeterministicRandom(`bg-y-${i}`) * SKY_HEIGHT}px`;
         sky.appendChild(bgStar);
     }
 
