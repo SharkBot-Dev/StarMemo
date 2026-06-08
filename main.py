@@ -302,13 +302,8 @@ def delete_memo(memo_id):
     if not roles.any_permission(user.get('roles', ['user']), 3):
         return jsonify({"error": "Forbidden"}), 403
 
-    from bson import ObjectId
-    result = db.memos_col.delete_one({"_id": ObjectId(memo_id)})
-    
-    if result.deleted_count == 1:
-        return jsonify({"success": True})
-    else:
-        return jsonify({"error": "Not found"}), 404
+    db.memos_col.delete_one({"_id": memo_id})
+    return jsonify({"success": True})
 
 @app.post('/api/ban')
 def set_ban():
