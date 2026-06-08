@@ -19,8 +19,8 @@ title = os.getenv("TITLE")
 description = os.getenv("DESCRIPTION")
 site_key = os.getenv("TURNSTILE_SITEKEY")
 
-db.db.memos_col.create_index("createdAt", expireAfterSeconds=86400)
-db.db.memos_col.update_many({"createdAt": {"$exists": False}}, {"$set": {"createdAt": datetime.now(timezone.utc)}})
+db.memos_col.create_index("createdAt", expireAfterSeconds=86400)
+db.memos_col.update_many({"createdAt": {"$exists": False}}, {"$set": {"createdAt": datetime.now(timezone.utc)}})
 
 def extract_keywords(text):
     tokens = tinysegmenter.tokenize(text)
