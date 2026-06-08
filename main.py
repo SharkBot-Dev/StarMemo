@@ -1,4 +1,5 @@
 import os
+import re
 from flask import Flask, render_template, request, jsonify, redirect, url_for, make_response
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -28,6 +29,11 @@ def extract_keywords(text):
     for token in tokens:
         keywords.add(token)
     return keywords
+
+def validate_password(password: str) -> str | None:
+    if len(password) < 8:
+        return "パスワードは8文字以上必要です。"
+    return None
 
 @app.route('/')
 def index():
@@ -86,6 +92,10 @@ def login_post():
         else:
             return render_template("login.html", error="その名前は既に使用されているか、パスワードが違います。", title=title, description=description, site_key=site_key)
     else:
+        pw_error = validate_password(password)
+        if pw_error:
+            return render_template("login.html", error=pw_error, title=title, description=description, site_key=site_key)
+
         hashed_password = generate_password_hash(password)
         db.users_col.insert_one({
             "username": username,
@@ -114,6 +124,48 @@ def privacy():
 @app.get('/forbidden')
 def forbidden():
     return render_template("forbidden.html", title=title, description=description)
+
+@app.get('/change-password')
+def change_password():
+    if 'code' not in request.cookies:
+        return redirect(url_for('login'))
+
+    user = db.users_col.find_one({"code": request.cookies.get('code')})
+    if not user:
+        return redirect(url_for('login'))
+
+    return render_template("change_password.html", title=title, description=description)
+
+@app.post('/change-password')
+def change_password_post():
+    if 'code' not in request.cookies:
+        return redirect(url_for('login'))
+
+    user = db.users_col.find_one({"code": request.cookies.get('code')})
+    if not user:
+        return redirect(url_for('login'))
+
+    current_password = request.form.get('current_password', '')
+    new_password = request.form.get('new_password', '')
+    confirm_password = request.form.get('confirm_password', '')
+
+    if not check_password_hash(user['password'], current_password):
+        return render_template("change_password.html", error="現在のパスワードが違います。", title=title, description=description)
+
+    if new_password != confirm_password:
+        return render_template("change_password.html", error="新しいパスワードと確認用パスワードが一致しません。", title=title, description=description)
+
+    pw_error = validate_password(new_password)
+    if pw_error:
+        return render_template("change_password.html", error=pw_error, title=title, description=description)
+
+    hashed_password = generate_password_hash(new_password)
+    db.users_col.update_one(
+        {"username": user['username']},
+        {"$set": {"password": hashed_password}}
+    )
+
+    return redirect(url_for('index'))
 
 @app.get('/admin')
 def admin():
