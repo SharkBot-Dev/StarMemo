@@ -26,6 +26,9 @@ body {
     position: relative;
     margin: 0;
     overscroll-behavior: none;
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
 }
 
 #scroll-wrapper {
